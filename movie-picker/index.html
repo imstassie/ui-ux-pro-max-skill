@@ -94,13 +94,37 @@
 
   /* result card */
   .stage{margin:32px auto 0;max-width:620px;width:100%}
-  .card{position:relative;overflow:hidden;background:var(--clay);border-radius:var(--radius);padding:36px 32px;border:3px solid #fff;box-shadow:14px 14px 32px var(--shadow-d),-12px -12px 30px var(--shadow-l);text-align:center}
+  .card{position:relative;overflow:hidden;background:var(--clay);border-radius:var(--radius);padding:36px 32px;border:3px solid #fff;box-shadow:14px 14px 32px var(--shadow-d),-12px -12px 30px var(--shadow-l);text-align:center;min-height:268px;display:flex;flex-direction:column;justify-content:center}
   .card.pop{animation:pop .5s var(--ease)}
   @keyframes pop{0%{transform:scale(.94)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+
+  /* state switching */
+  .state{display:none}
+  .card[data-state="idle"] .state-idle{display:block;animation:fadeIn .4s ease}
+  .card[data-state="rolling"] .state-roll{display:block;animation:fadeIn .25s ease}
+  .card[data-state="result"] .state-result{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* idle */
+  .idle-art{width:84px;height:84px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;color:var(--green-400);background:var(--clay-2);box-shadow:inset 4px 4px 10px var(--shadow-d),inset -4px -4px 10px var(--shadow-l);animation:bob 3.4s ease-in-out infinite}
+  .idle-art svg{width:42px;height:42px}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .idle-title{font-family:'Fredoka';font-weight:700;font-size:clamp(1.4rem,4.6vw,2rem);color:var(--green-deep)}
+  .idle-sub{margin-top:6px;font-weight:600;color:var(--muted)}
+
+  /* rolling animation (instead of flickering titles) */
+  .spinner-reel{position:relative;width:88px;height:88px;margin:0 auto 20px;border-radius:50%;background:var(--green-400);box-shadow:6px 6px 14px var(--shadow-d),-6px -6px 14px var(--shadow-l);animation:spin 1s linear infinite}
+  .spinner-reel::before{content:"";position:absolute;inset:0;margin:auto;width:22px;height:22px;border-radius:50%;background:var(--clay);box-shadow:inset 2px 2px 4px rgba(0,0,0,.12)}
+  .spinner-reel i{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--clay);opacity:.95}
+  .spinner-reel i:nth-child(1){top:8px;left:37px}.spinner-reel i:nth-child(2){bottom:8px;left:37px}
+  .spinner-reel i:nth-child(3){left:8px;top:37px}.spinner-reel i:nth-child(4){right:8px;top:37px}
+  .roll-text{font-family:'Fredoka';font-weight:600;font-size:1.25rem;color:var(--green-500)}
+  .dots i{animation:blink 1.1s infinite}
+  .dots i:nth-child(2){animation-delay:.18s}.dots i:nth-child(3){animation-delay:.36s}
+  @keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+
   .eyebrow{font-weight:800;letter-spacing:2.5px;font-size:.7rem;text-transform:uppercase;color:var(--green-300)}
-  .movie{font-family:'Fredoka';font-weight:700;font-size:clamp(1.5rem,5vw,2.4rem);color:var(--green-deep);margin:12px 0;line-height:1.08;min-height:1.1em;transition:filter .12s,opacity .12s}
-  .movie.rolling{filter:blur(1.2px);opacity:.8}
-  .movie.placeholder{color:var(--green-300);font-style:italic}
+  .movie{font-family:'Fredoka';font-weight:700;font-size:clamp(1.5rem,5vw,2.4rem);color:var(--green-deep);margin:12px 0;line-height:1.08}
 
   .meta{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin:6px 0 4px}
   .pill{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:.84rem;color:var(--green-500);background:var(--green-100);padding:7px 14px;border-radius:99px}
@@ -177,12 +201,30 @@
       <div class="genres" id="genres"></div>
 
       <div class="stage">
-        <div class="card" id="card">
-          <div class="eyebrow">Смотрим сегодня</div>
-          <div class="movie placeholder" id="movieName">Нажми кнопку ниже 👇</div>
-          <div class="meta" id="meta"></div>
-          <p class="desc" id="desc"></p>
-          <div class="card-actions" id="actions"></div>
+        <div class="card" id="card" data-state="idle">
+          <!-- состояние: ожидание -->
+          <div class="state state-idle">
+            <div class="idle-art">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="6" r="1"/><circle cx="12" cy="18" r="1"/><circle cx="6" cy="12" r="1"/><circle cx="18" cy="12" r="1"/></svg>
+            </div>
+            <div class="idle-title">Нажми кнопку ниже</div>
+            <div class="idle-sub">— и подберём тебе фильм на вечер</div>
+          </div>
+
+          <!-- состояние: подбор (анимация вместо мелькающих названий) -->
+          <div class="state state-roll">
+            <div class="spinner-reel"><i></i><i></i><i></i><i></i></div>
+            <div class="roll-text">Подбираем фильм<span class="dots"><i>.</i><i>.</i><i>.</i></span></div>
+          </div>
+
+          <!-- состояние: результат -->
+          <div class="state state-result">
+            <div class="eyebrow">Смотрим сегодня</div>
+            <div class="movie" id="movieName"></div>
+            <div class="meta" id="meta"></div>
+            <p class="desc" id="desc"></p>
+            <div class="card-actions" id="actions"></div>
+          </div>
         </div>
 
         <div class="cta-row">
@@ -318,31 +360,24 @@ function pick(){
   if(rolling) return;
   const list=pool();
   if(!list.length){
-    movieName.classList.remove("placeholder","rolling");
+    card.dataset.state="result";
     movieName.textContent="В этой подборке пусто 🙈";
     meta.innerHTML="";desc.textContent="";actions.innerHTML="";
     return;
   }
   rolling=true;pickBtn.disabled=true;
-  meta.innerHTML="";desc.textContent="";actions.innerHTML="";
-  movieName.classList.remove("placeholder");movieName.classList.add("rolling");
+  card.dataset.state="rolling"; // показываем анимацию подбора
+  // заранее выбираем фильм (без повтора предыдущего)
+  let f=list[Math.floor(Math.random()*list.length)],g=0;
+  while(list.length>1&&f.t===lastPick&&g<10){ f=list[Math.floor(Math.random()*list.length)];g++; }
+  lastPick=f.t;
   const reduce=window.matchMedia("(prefers-reduced-motion:reduce)").matches;
-  const ticks=reduce?1:16; let i=0;
-  const roll=()=>{
-    movieName.textContent=list[Math.floor(Math.random()*list.length)].t;
-    if(++i<ticks){ setTimeout(roll,60+i*14); }
-    else{
-      let f=list[Math.floor(Math.random()*list.length)],g=0;
-      while(list.length>1&&f.t===lastPick&&g<10){ f=list[Math.floor(Math.random()*list.length)];g++; }
-      lastPick=f.t; reveal(f);
-    }
-  };
-  roll();
+  setTimeout(()=>reveal(f), reduce?150:1150);
 }
 
 function reveal(m){
   current=m;
-  movieName.classList.remove("rolling");
+  card.dataset.state="result";
   movieName.textContent=m.t;
   meta.innerHTML=
     '<span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'+m.y+'</span>'+
