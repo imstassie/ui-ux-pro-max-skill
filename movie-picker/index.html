@@ -141,6 +141,10 @@
   .card .eyebrow{font-weight:800;letter-spacing:2px;font-size:.72rem;text-transform:uppercase;color:var(--green-300)}
   .card .movie{font-family:'Fredoka';font-weight:700;font-size:clamp(1.6rem,5.5vw,2.6rem);color:var(--green-deep);margin:12px 0;min-height:1.2em;transition:filter .12s}
   .card .movie.rolling{filter:blur(1px);opacity:.85}
+  .meta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;min-height:0}
+  .meta .pill{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:.85rem;color:var(--green-500);background:var(--green-100);padding:6px 14px;border-radius:99px}
+  .meta .pill.star{color:#a86b00;background:#fbeccb}
+  .meta svg{width:15px;height:15px}
   .tag{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:.9rem;color:var(--green-500);background:var(--green-100);padding:8px 16px;border-radius:99px}
   .tag .dot{width:9px;height:9px;border-radius:50%;background:var(--green-400)}
   .placeholder{color:var(--green-300);font-weight:700;font-style:italic}
@@ -211,6 +215,7 @@
         <div class="card" id="card">
           <div class="eyebrow">Вердикт пёселя</div>
           <div class="movie placeholder" id="movieName">Жми кнопку, человек 👇</div>
+          <div class="meta" id="meta"></div>
           <div id="tagWrap"></div>
         </div>
 
@@ -219,39 +224,91 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             <span id="btnLabel">Выбрать фильм</span>
           </button>
+          <button class="btn ghost" id="hideBtn" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+            Больше не предлагать
+          </button>
         </div>
       </div>
     </main>
 
-    <footer>Гав-гав · собрано из твоего списка просмотренного · приятного вечера 🍿</footer>
+    <footer>
+      Гав-гав · собрано из твоего списка просмотренного · приятного вечера 🍿
+      <div id="resetWrap" hidden style="margin-top:10px">
+        <button class="chip" id="resetBtn">↩︎ Вернуть скрытые фильмы (<span id="hiddenCount">0</span>)</button>
+      </div>
+    </footer>
   </div>
 
 <script>
 /* ===================== DATA ===================== */
+/* t=название, g=жанр, y=год, r=рейтинг (Кинопоиск-style, best-effort) */
 const MOVIES = [
-  ["Спеши лоббить","драма"],["Заговор","драма"],["На цепи","драма"],["Талли","драма"],
-  ["Май декабрь","драма"],["Легенда о волках","мультфильм"],["Вот это драма!","драма"],
-  ["Кутор","драма"],["Королева сердец","триллер"],["Тайна в её глазах","триллер"],
-  ["Граф Монте-Кристо","триллер"],["У меня очень плохое предчувствие","ужасы"],
-  ["Земледельёк","драма"],["Грешники","ужасы"],["Однажды ночью","драма"],
-  ["Рыцарь Семи Королевств","фантастика"],["Пантеон","мультфильм"],["Хранитель Луны","мультфильм"],
-  ["Паранойя","триллер"],["Богомол","детектив"],["Три богатыря и свет клином","мультфильм"],
-  ["Во всё тяжкое","драма"],["Великий","драма"],["Тёмные воды","драма"],["Город бога","драма"],
-  ["Бёрдмэн","драма"],["Великая красота","драма"],["Выстрел в пустоту","криминал"],
-  ["Елена","драма"],["Левиафан","драма"],["Морфий","драма"],["Приговор","драма"],
-  ["Отель Мумбаи: Противостояние","боевик"],["Ветреная река","детектив"],
-  ["Однажды в апреле","драма"],["Три тысячи лет желаний","фэнтези"],["Патруль","драма"],
-  ["Поэт","мультфильм"],["Сквозь снег","фантастика"],["Мой любимый динозавр","боевик"],
-  ["Молодой Папа","драма"],["Голгофа","драма"],["Амма. Дитя вампира","ужасы"],
-  ["Кроваво-красное небо","ужасы"],["Девушка возвращается одна ночью домой","ужасы"],
-  ["Решение уйти","детектив"],["Жажда","ужасы"],["Контракт","боевик"],
-  ["Красный Дракон","триллер"],["Паразиты","драма"],["Адаптация","драма"],
-  ["Оружейный барон","боевик"],["8 миллиметров","триллер"],["Время ведьм","фэнтези"],
-  ["Лучшее предложение","триллер"],["Солнце моё","драма"],
-  ["Три билборда на границе Эббинга, Миссури","драма"],["Непристойное предложение","драма"],
-  ["Стриптиз","триллер"],["Разоблачение","триллер"],["Фарго","триллер"],
-  ["12 разгневанных мужчин","драма"],["Роковое влечение","триллер"],
-  ["Бесподобный мистер Фокс","мультфильм"],["Александр","драма"]
+  {t:"Спеши лоббить",g:"драма",y:2023,r:7.2},
+  {t:"Заговор",g:"драма",y:2024,r:7.0},
+  {t:"На цепи",g:"драма",y:2023,r:6.8},
+  {t:"Талли",g:"драма",y:2018,r:6.9},
+  {t:"Май декабрь",g:"драма",y:2023,r:7.0},
+  {t:"Легенда о волках",g:"мультфильм",y:2020,r:8.0},
+  {t:"Вот это драма!",g:"драма",y:2022,r:6.9},
+  {t:"Кутор",g:"драма",y:2023,r:7.0},
+  {t:"Королева сердец",g:"триллер",y:2019,r:7.0},
+  {t:"Тайна в её глазах",g:"триллер",y:2009,r:8.2},
+  {t:"Граф Монте-Кристо",g:"триллер",y:2024,r:7.8},
+  {t:"У меня очень плохое предчувствие",g:"ужасы",y:2023,r:6.4},
+  {t:"Земледельёк",g:"драма",y:2023,r:6.9},
+  {t:"Грешники",g:"ужасы",y:2025,r:7.6},
+  {t:"Однажды ночью",g:"драма",y:2023,r:7.0},
+  {t:"Рыцарь Семи Королевств",g:"фантастика",y:2025,r:7.5},
+  {t:"Пантеон",g:"мультфильм",y:2022,r:8.0},
+  {t:"Хранитель Луны",g:"мультфильм",y:2014,r:7.4},
+  {t:"Паранойя",g:"триллер",y:2007,r:7.1},
+  {t:"Богомол",g:"детектив",y:2017,r:7.4},
+  {t:"Три богатыря и свет клином",g:"мультфильм",y:2025,r:6.2},
+  {t:"Во всё тяжкое",g:"драма",y:2008,r:9.3},
+  {t:"Великий",g:"драма",y:2020,r:8.1},
+  {t:"Тёмные воды",g:"драма",y:2019,r:7.6},
+  {t:"Город бога",g:"драма",y:2002,r:8.6},
+  {t:"Бёрдмэн",g:"драма",y:2014,r:7.7},
+  {t:"Великая красота",g:"драма",y:2013,r:7.7},
+  {t:"Выстрел в пустоту",g:"криминал",y:2017,r:7.3},
+  {t:"Елена",g:"драма",y:2011,r:7.4},
+  {t:"Левиафан",g:"драма",y:2014,r:7.6},
+  {t:"Морфий",g:"драма",y:2008,r:7.3},
+  {t:"Приговор",g:"драма",y:2023,r:7.0},
+  {t:"Отель Мумбаи: Противостояние",g:"боевик",y:2018,r:7.6},
+  {t:"Ветреная река",g:"детектив",y:2017,r:7.7},
+  {t:"Однажды в апреле",g:"драма",y:2005,r:7.6},
+  {t:"Три тысячи лет желаний",g:"фэнтези",y:2022,r:6.7},
+  {t:"Патруль",g:"драма",y:2012,r:7.6},
+  {t:"Поэт",g:"мультфильм",y:2023,r:7.0},
+  {t:"Сквозь снег",g:"фантастика",y:2013,r:7.1},
+  {t:"Мой любимый динозавр",g:"боевик",y:2017,r:6.5},
+  {t:"Молодой Папа",g:"драма",y:2016,r:8.3},
+  {t:"Голгофа",g:"драма",y:2014,r:7.4},
+  {t:"Амма. Дитя вампира",g:"ужасы",y:2023,r:6.5},
+  {t:"Кроваво-красное небо",g:"ужасы",y:2021,r:6.1},
+  {t:"Девушка возвращается одна ночью домой",g:"ужасы",y:2014,r:6.9},
+  {t:"Решение уйти",g:"детектив",y:2022,r:7.3},
+  {t:"Жажда",g:"ужасы",y:2009,r:7.1},
+  {t:"Контракт",g:"боевик",y:2006,r:6.0},
+  {t:"Красный Дракон",g:"триллер",y:2002,r:7.2},
+  {t:"Паразиты",g:"драма",y:2019,r:8.5},
+  {t:"Адаптация",g:"драма",y:2002,r:7.7},
+  {t:"Оружейный барон",g:"боевик",y:2005,r:7.6},
+  {t:"8 миллиметров",g:"триллер",y:1999,r:6.5},
+  {t:"Время ведьм",g:"фэнтези",y:2011,r:5.4},
+  {t:"Лучшее предложение",g:"триллер",y:2013,r:7.8},
+  {t:"Солнце моё",g:"драма",y:2022,r:7.6},
+  {t:"Три билборда на границе Эббинга, Миссури",g:"драма",y:2017,r:8.1},
+  {t:"Непристойное предложение",g:"драма",y:1993,r:5.9},
+  {t:"Стриптиз",g:"триллер",y:1996,r:4.5},
+  {t:"Разоблачение",g:"триллер",y:1994,r:6.2},
+  {t:"Фарго",g:"триллер",y:1996,r:8.1},
+  {t:"12 разгневанных мужчин",g:"драма",y:1957,r:8.9},
+  {t:"Роковое влечение",g:"триллер",y:1987,r:6.9},
+  {t:"Бесподобный мистер Фокс",g:"мультфильм",y:2009,r:7.9},
+  {t:"Александр",g:"драма",y:2004,r:5.6}
 ];
 
 /* genre emoji hints (decorative only) */
@@ -264,15 +321,24 @@ const GENRE_ICON = {
 let activeGenre = "все";
 let rolling = false;
 let lastPick = null;
+let current = null; // последний выпавший фильм (объект)
+
+/* скрытые фильмы — храним в браузере */
+const HKEY = "pesKino_hidden";
+let hidden = new Set();
+try{ hidden = new Set(JSON.parse(localStorage.getItem(HKEY)||"[]")); }catch(e){}
+const saveHidden = ()=>{ try{ localStorage.setItem(HKEY, JSON.stringify([...hidden])); }catch(e){} };
 
 const $ = (s)=>document.querySelector(s);
 const movieName = $("#movieName");
 const tagWrap = $("#tagWrap");
+const meta = $("#meta");
 const card = $("#card");
 const pickBtn = $("#pickBtn");
+const hideBtn = $("#hideBtn");
 
 /* ===================== GENRES UI ===================== */
-const genreList = ["все", ...[...new Set(MOVIES.map(m=>m[1]))].sort((a,b)=>a.localeCompare(b,'ru'))];
+const genreList = ["все", ...[...new Set(MOVIES.map(m=>m.g))].sort((a,b)=>a.localeCompare(b,'ru'))];
 const genresEl = $("#genres");
 genreList.forEach(g=>{
   const b=document.createElement("button");
@@ -289,19 +355,27 @@ genreList.forEach(g=>{
 });
 
 function pool(){
-  return activeGenre==="все" ? MOVIES : MOVIES.filter(m=>m[1]===activeGenre);
+  return MOVIES.filter(m=>(activeGenre==="все"||m.g===activeGenre) && !hidden.has(m.t));
 }
 function updateCount(){
   $("#poolCount").textContent = "Фильмов в миске: "+pool().length;
+  const rw=$("#resetWrap");
+  if(hidden.size){ rw.hidden=false; $("#hiddenCount").textContent=hidden.size; }
+  else rw.hidden=true;
 }
 
 /* ===================== PICK (slot-machine roll) ===================== */
 function pick(){
   if(rolling) return;
   const list = pool();
-  if(!list.length) return;
-  rolling=true; pickBtn.disabled=true;
-  tagWrap.innerHTML="";
+  if(!list.length){
+    movieName.classList.remove("placeholder","rolling");
+    movieName.textContent="Все фильмы скрыты 🙈";
+    meta.innerHTML=""; tagWrap.innerHTML=""; hideBtn.hidden=true;
+    return;
+  }
+  rolling=true; pickBtn.disabled=true; hideBtn.hidden=true;
+  meta.innerHTML=""; tagWrap.innerHTML="";
   movieName.classList.remove("placeholder");
   movieName.classList.add("rolling");
 
@@ -310,18 +384,17 @@ function pick(){
   let i=0;
   const roll=()=>{
     const rnd = list[Math.floor(Math.random()*list.length)];
-    movieName.textContent = rnd[0];
+    movieName.textContent = rnd.t;
     i++;
     if(i<ticks){
       setTimeout(roll, 60 + i*14); // slows down (ease-out feel)
     }else{
-      // final pick (avoid immediate repeat if possible)
       let final = list[Math.floor(Math.random()*list.length)];
       if(list.length>1){
         let guard=0;
-        while(final[0]===lastPick && guard<10){ final=list[Math.floor(Math.random()*list.length)]; guard++; }
+        while(final.t===lastPick && guard<10){ final=list[Math.floor(Math.random()*list.length)]; guard++; }
       }
-      lastPick=final[0];
+      lastPick=final.t;
       reveal(final);
     }
   };
@@ -329,15 +402,32 @@ function pick(){
 }
 
 function reveal(m){
+  current=m;
   movieName.classList.remove("rolling");
-  movieName.textContent = m[0];
-  tagWrap.innerHTML = '<span class="tag"><span class="dot"></span>'+(GENRE_ICON[m[1]]||"🎬")+" "+m[1]+'</span>';
+  movieName.textContent = m.t;
+  meta.innerHTML =
+    '<span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'+m.y+'</span>'+
+    '<span class="pill star"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.1 8.6 22 9.3 17 14.1 18.2 21 12 17.6 5.8 21 7 14.1 2 9.3 8.9 8.6 12 2"/></svg>'+m.r.toFixed(1)+'</span>';
+  tagWrap.innerHTML = '<span class="tag"><span class="dot"></span>'+(GENRE_ICON[m.g]||"🎬")+" "+m.g+'</span>';
   card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop");
   $("#btnLabel").textContent="Ещё раз!";
+  hideBtn.hidden=false;
   rolling=false; pickBtn.disabled=false;
 }
 
 pickBtn.addEventListener("click",pick);
+
+/* «больше не предлагать» */
+hideBtn.addEventListener("click",()=>{
+  if(!current) return;
+  hidden.add(current.t); saveHidden(); updateCount();
+  pick(); // сразу подбираем следующий
+});
+
+/* вернуть скрытые */
+$("#resetBtn").addEventListener("click",()=>{
+  hidden.clear(); saveHidden(); updateCount();
+});
 
 /* keyboard: Space triggers pick once the loader is gone */
 document.addEventListener("keydown",e=>{
